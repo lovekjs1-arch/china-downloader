@@ -18,7 +18,7 @@ MAX_AGE_SECONDS = int(os.environ.get("MAX_AGE_SECONDS", "7200"))
 
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="")
 app.secret_key = SECRET_KEY
 
 jobs: Dict[str, Dict[str, Any]] = {}
