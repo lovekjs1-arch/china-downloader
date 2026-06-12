@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>모바일 다운로더 로그인</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="wrap narrow">
+    <section class="card top-card">
+      <h1>비밀번호 입력</h1>
+      <p class="sub">공개 인터넷 주소로 열리는 도구라서 비밀번호를 걸어두는 게 안전합니다.</p>
+      <form method="post" class="login-form">
+        <input class="input" type="password" name="password" placeholder="APP_PASSWORD" autofocus />
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+        <button class="primary" type="submit">들어가기</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
