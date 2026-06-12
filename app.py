@@ -9,7 +9,7 @@ from pathlib import Path
 from functools import wraps
 from urllib.parse import urlparse
 
-from flask import Flask, request, jsonify, send_from_directory, session, redirect, render_template
+from flask import Flask, request, jsonify, send_file, session, redirect, render_template
 from werkzeug.middleware.proxy_fix import ProxyFix
 import yt_dlp
 
@@ -139,7 +139,14 @@ def run_download(job_id, urls, mode):
                         p = target
                     except Exception:
                         pass
-                results.append({"name": p.name, "url": f"/file/{job_id}/{p.name}", "size": p.stat().st_size})
+                file_id = uuid.uuid4().hex[:10]
+                results.append({
+                    "id": file_id,
+                    "name": p.name,
+                    "url": f"/file/{job_id}/{file_id}",
+                    "size": p.stat().st_size,
+                    "_path": p.name,
+                })
             job_update(job_id, progress=int(idx * 100 / total), files=results)
         except Exception as e:
             results.append({"name": "실패", "url": "", "size": 0, "error": str(e)[:260], "source": url})
@@ -217,13 +224,45 @@ def api_job(job_id):
         job = jobs.get(job_id)
     if not job:
         return jsonify({"ok": False, "error": "작업을 찾을 수 없습니다."}), 404
-    return jsonify({"ok": True, "job": job})
+
+    public_job = dict(job)
+    public_files = []
+    for f in job.get("files", []):
+        item = {k: v for k, v in f.items() if not k.startswith("_")}
+        public_files.append(item)
+    public_job["files"] = public_files
+    return jsonify({"ok": True, "job": public_job})
 
 
-@app.get("/file/<job_id>/<path:filename>")
+@app.get("/file/<job_id>/<path:token>")
 @auth_required
-def get_file(job_id, filename):
-    return send_from_directory(BASE_DIR / job_id, filename, as_attachment=True)
+def get_file(job_id, token):
+    with lock:
+        job = jobs.get(job_id)
+
+    if not job:
+        return "파일을 찾을 수 없습니다. 다시 다운로드하세요.", 404
+
+    selected = None
+    for f in job.get("files", []):
+        if f.get("id") == token or f.get("name") == token:
+            selected = f
+            break
+
+    if not selected:
+        return "파일을 찾을 수 없습니다. 다시 다운로드하세요.", 404
+
+    file_path = (BASE_DIR / job_id / selected.get("_path", selected.get("name", ""))).resolve()
+    job_dir = (BASE_DIR / job_id).resolve()
+    if not str(file_path).startswith(str(job_dir)) or not file_path.exists():
+        return "파일을 찾을 수 없습니다. 다시 다운로드하세요.", 404
+
+    return send_file(
+        file_path,
+        as_attachment=True,
+        download_name=selected.get("name") or file_path.name,
+        max_age=0,
+    )
 
 
 @app.get("/health")

@@ -1,6 +1,3 @@
-ClipVault 2026
+ClipVault 2026 Save Fix
 
-GitHub에 압축을 푼 파일 전체를 업로드하세요.
-Render에서 Web Service를 만들고 Runtime은 Docker로 선택하세요.
-비공개로 쓰려면 Environment Variables에 APP_PASSWORD를 추가하세요.
-배포 후 onrender.com 주소를 휴대폰에서 열면 됩니다.
+저장 링크 404 오류를 고친 버전입니다. GitHub에 압축 푼 파일 전체를 덮어쓰기 업로드한 뒤 Render에서 Deploy latest commit을 실행하세요.

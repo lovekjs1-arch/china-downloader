@@ -58,7 +58,7 @@ function renderFiles(files){
     if (f.error) {
       div.innerHTML = `<div><strong>실패</strong><small>${escapeHtml(f.error)}</small></div>`;
     } else {
-      div.innerHTML = `<div><strong>${escapeHtml(f.name)}</strong><small>${fileSize(f.size)}</small></div><a href="${f.url}">저장</a>`;
+      div.innerHTML = `<div><strong>${escapeHtml(f.name)}</strong><small>${fileSize(f.size)}</small></div><a href="${f.url}" download rel="noopener">저장</a>`;
     }
     resultCard.appendChild(div);
   });
