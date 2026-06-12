@@ -1,123 +1,120 @@
-const linkText = document.getElementById('linkText');
-const pasteBtn = document.getElementById('pasteBtn');
-const clearBtn = document.getElementById('clearBtn');
-const startBtn = document.getElementById('startBtn');
-const statusCard = document.getElementById('statusCard');
-const statusText = document.getElementById('statusText');
-const percent = document.getElementById('percent');
-const barFill = document.getElementById('barFill');
-const meta = document.getElementById('meta');
-const logs = document.getElementById('logs');
-const files = document.getElementById('files');
-
+const $ = (id) => document.getElementById(id);
+const linkText = $("linkText");
+const pasteBtn = $("pasteBtn");
+const clearBtn = $("clearBtn");
+const startBtn = $("startBtn");
+const statusCard = $("statusCard");
+const statusText = $("statusText");
+const percentText = $("percentText");
+const barFill = $("barFill");
+const resultCard = $("resultCard");
+let mode = "video";
 let timer = null;
-let currentJob = null;
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/static/sw.js').catch(() => {});
-}
+document.querySelectorAll(".mode").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".mode").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    mode = btn.dataset.mode;
+  });
+});
 
-function setBusy(busy){
-  startBtn.disabled = busy;
-  startBtn.textContent = busy ? '다운로드 중...' : '다운로드 시작';
-}
-
-function getMode(){
-  return document.querySelector('input[name="mode"]:checked')?.value || 'video';
-}
-
-pasteBtn.addEventListener('click', async () => {
+pasteBtn.addEventListener("click", async () => {
   try {
     const text = await navigator.clipboard.readText();
-    linkText.value = text;
-  } catch(e) {
-    alert('브라우저가 자동 붙여넣기를 막았습니다. 길게 눌러 직접 붙여넣기 하세요.');
+    if (text) linkText.value = linkText.value ? `${linkText.value}\n${text}` : text;
+  } catch (e) {
+    linkText.focus();
+    status("붙여넣기 권한을 허용하거나 길게 눌러 붙여넣으세요.", 0);
   }
 });
 
-clearBtn.addEventListener('click', () => {
-  linkText.value = '';
-  linkText.focus();
+clearBtn.addEventListener("click", () => {
+  linkText.value = "";
+  resultCard.innerHTML = "";
+  statusCard.classList.add("hidden");
 });
 
-startBtn.addEventListener('click', async () => {
+function status(text, percent){
+  statusCard.classList.remove("hidden");
+  statusText.textContent = text;
+  percentText.textContent = `${percent}%`;
+  barFill.style.width = `${percent}%`;
+}
+
+function fileSize(bytes){
+  if (!bytes) return "";
+  const units = ["B","KB","MB","GB"];
+  let n = bytes, i = 0;
+  while(n >= 1024 && i < units.length-1){ n /= 1024; i++; }
+  return `${n.toFixed(i ? 1 : 0)} ${units[i]}`;
+}
+
+function renderFiles(files){
+  resultCard.innerHTML = "";
+  files.forEach(f => {
+    const div = document.createElement("div");
+    div.className = f.error ? "file fail" : "file";
+    if (f.error) {
+      div.innerHTML = `<div><strong>실패</strong><small>${escapeHtml(f.error)}</small></div>`;
+    } else {
+      div.innerHTML = `<div><strong>${escapeHtml(f.name)}</strong><small>${fileSize(f.size)}</small></div><a href="${f.url}">저장</a>`;
+    }
+    resultCard.appendChild(div);
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));
+}
+
+startBtn.addEventListener("click", async () => {
   const text = linkText.value.trim();
-  if(!text){
-    alert('링크를 먼저 붙여넣으세요.');
+  if (!text) {
+    status("링크를 넣으세요.", 0);
     return;
   }
-  statusCard.classList.remove('hidden');
-  statusText.textContent = '작업 등록중';
-  percent.textContent = '0%';
-  barFill.style.width = '0%';
-  meta.textContent = '';
-  logs.innerHTML = '';
-  files.innerHTML = '';
-  setBusy(true);
-
+  startBtn.disabled = true;
+  resultCard.innerHTML = "";
+  status("시작", 1);
   try {
-    const res = await fetch('/api/start', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({text, mode:getMode()})
+    const res = await fetch("/api/download", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text, mode})
     });
     const data = await res.json();
-    if(!data.ok) throw new Error(data.error || '시작 실패');
-    currentJob = data.job_id;
-    poll(currentJob);
-  } catch(e) {
-    setBusy(false);
-    statusText.textContent = '오류';
-    meta.textContent = e.message;
+    if (!data.ok) throw new Error(data.error || "실패");
+    watch(data.job_id);
+  } catch (e) {
+    startBtn.disabled = false;
+    status(e.message || "실패", 0);
   }
 });
 
-async function poll(jobId){
-  clearTimeout(timer);
-  try {
-    const res = await fetch(`/api/status/${jobId}`);
-    const data = await res.json();
-    if(!data.ok) throw new Error(data.error || '상태 확인 실패');
-    renderJob(data.job);
-    if(['done','error'].includes(data.job.status)) {
-      setBusy(false);
-      return;
+function watch(jobId){
+  clearInterval(timer);
+  timer = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/job/${jobId}`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "상태 확인 실패");
+      const job = data.job;
+      status(job.message || job.status, job.progress || 0);
+      renderFiles(job.files || []);
+      if (job.status === "done") {
+        clearInterval(timer);
+        startBtn.disabled = false;
+        status("완료", 100);
+      }
+    } catch (e) {
+      clearInterval(timer);
+      startBtn.disabled = false;
+      status(e.message || "오류", 0);
     }
-    timer = setTimeout(() => poll(jobId), 1200);
-  } catch(e) {
-    setBusy(false);
-    statusText.textContent = '오류';
-    meta.textContent = e.message;
-  }
+  }, 1000);
 }
 
-function labelStatus(s){
-  const map = {
-    queued:'대기중', starting:'시작중', downloading:'다운로드 중', processing:'파일 정리 중', done:'완료', error:'오류'
-  };
-  return map[s] || s;
-}
-
-function renderJob(job){
-  const p = Number(job.progress || 0);
-  statusText.textContent = labelStatus(job.status);
-  percent.textContent = `${p}%`;
-  barFill.style.width = `${Math.max(0, Math.min(100, p))}%`;
-
-  const metaParts = [];
-  if(job.filename) metaParts.push(job.filename);
-  if(job.speed) metaParts.push(job.speed);
-  if(job.eta) metaParts.push(`남은 시간 ${job.eta}초`);
-  if(job.error) metaParts.push(job.error);
-  meta.textContent = metaParts.join(' · ');
-
-  logs.innerHTML = (job.logs || []).map(x => `<div class="log-line">${escapeHtml(x)}</div>`).join('');
-
-  if(job.files && job.files.length){
-    files.innerHTML = job.files.map(f => `<a class="file-btn" href="${f.url}">휴대폰에 저장: ${escapeHtml(f.name)} ${f.size ? '('+f.size+')' : ''}</a>`).join('');
-  }
-}
-
-function escapeHtml(str){
-  return String(str).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
 }

@@ -1,26 +1,9 @@
 {
-  "name": "중국 영상 모바일 다운로더",
-  "short_name": "영상다운",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#0f0f10",
-  "theme_color": "#111111",
-  "icons": [
-    {
-      "src": "/static/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ],
-  "share_target": {
-    "action": "/share",
-    "method": "POST",
-    "enctype": "application/x-www-form-urlencoded",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  }
+  "name":"Link Downloader",
+  "short_name":"Downloader",
+  "start_url":"/",
+  "display":"standalone",
+  "background_color":"#080b12",
+  "theme_color":"#080b12",
+  "icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml"}]
 }

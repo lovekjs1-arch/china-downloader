@@ -1,6 +1,5 @@
+.git
 __pycache__
 *.pyc
-.env
-.git
-.gitignore
-README_images
+*.zip
+downloads

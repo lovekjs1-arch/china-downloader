@@ -2,63 +2,46 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#111111" />
-  <title>모바일 도우인·샤오홍수 다운로더</title>
-  <link rel="manifest" href="/static/manifest.webmanifest" />
-  <link rel="stylesheet" href="/static/style.css" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#07080d" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icon.svg" />
+  <link rel="stylesheet" href="/style.css" />
+  <title>ClipVault</title>
 </head>
 <body>
-  <main class="wrap">
-    <section class="hero">
+  <main class="app">
+    <header class="top">
       <div>
-        <p class="eyebrow">Mobile Web Downloader</p>
-        <h1>링크 붙여넣고<br>휴대폰으로 바로 저장</h1>
+        <p class="kicker">DOUYIN · XIAOHONGSHU</p>
+        <h1>ClipVault</h1>
       </div>
-      <a class="small-link" href="/logout">나가기</a>
+      <button id="clearBtn" class="mini" type="button">초기화</button>
+    </header>
+
+    <section class="panel">
+      <label for="linkText">링크</label>
+      <textarea id="linkText" placeholder="공유 링크 또는 공유 문구를 붙여넣으세요." autocomplete="off" spellcheck="false"></textarea>
+      <button id="pasteBtn" class="soft" type="button">붙여넣기</button>
     </section>
 
-    {% if not password_enabled %}
-    <section class="warn">
-      비밀번호가 꺼져 있습니다. Render 환경변수에 APP_PASSWORD를 넣으면 혼자만 쓸 수 있습니다.
-    </section>
-    {% endif %}
-
-    <section class="card">
-      <label class="label" for="linkText">공유 문구 또는 링크</label>
-      <textarea id="linkText" placeholder="도우인·샤오홍수 앱에서 공유 → 링크 복사 → 여기에 붙여넣기">{{ prefill }}</textarea>
-      <div class="row">
-        <button id="pasteBtn" class="secondary" type="button">붙여넣기</button>
-        <button id="clearBtn" class="ghost" type="button">지우기</button>
-      </div>
-      <div class="mode-box">
-        <label><input type="radio" name="mode" value="video" checked> 영상 저장</label>
-        <label><input type="radio" name="mode" value="audio"> 음성 MP3</label>
-      </div>
+    <section class="switch">
+      <button class="mode active" data-mode="video" type="button">영상</button>
+      <button class="mode" data-mode="audio" type="button">음성</button>
     </section>
 
-    <section id="statusCard" class="card hidden">
-      <div class="status-head">
-        <strong id="statusText">준비중</strong>
-        <span id="percent">0%</span>
-      </div>
-      <div class="bar"><div id="barFill"></div></div>
-      <p id="meta" class="meta"></p>
-      <div id="logs" class="logs"></div>
-      <div id="files" class="files"></div>
+    <section id="statusCard" class="progress hidden">
+      <div><span id="statusText">대기</span><span id="percentText">0%</span></div>
+      <i><b id="barFill"></b></i>
     </section>
 
-    <section class="tips">
-      <h2>휴대폰에서 편하게 쓰는 법</h2>
-      <p>브라우저 메뉴에서 “홈 화면에 추가”를 누르면 앱처럼 열립니다.</p>
-      <p>도우인·샤오홍수 일부 링크는 사이트 변경, 비공개, 로그인 제한 때문에 실패할 수 있습니다.</p>
-    </section>
+    <section id="resultCard" class="results"></section>
   </main>
 
-  <div class="bottom-bar">
-    <button id="startBtn" class="primary big" type="button">다운로드 시작</button>
-  </div>
+  <footer class="dock">
+    <button id="startBtn" class="main" type="button">다운로드</button>
+  </footer>
 
-  <script src="/static/app.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
